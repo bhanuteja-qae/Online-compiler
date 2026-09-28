@@ -1,4 +1,4 @@
-// Practice problems, two per DSA pattern, drawn from well-known LeetCode and
+// Practice problems, three per DSA pattern (at least one Easy), drawn from well-known LeetCode and
 // HackerRank questions. Statements are short paraphrases written for this
 // project; each links to the original page for the full text.
 //
@@ -1316,6 +1316,616 @@ print(coin_change([1, 2, 5], 11))
 
 
 print(coin_change([1, 2, 5], 11))
+`,
+  },
+  // ============================================================ extra Easy set: one per pattern
+  {
+    id: "squares-of-a-sorted-array",
+    title: "Squares of a Sorted Array",
+    pattern: "two-pointers",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 977", url: LC("squares-of-a-sorted-array") }],
+    desc: "nums is sorted in ascending order and may contain negative numbers. Return the square of each number, also sorted in ascending order. Try to do it in O(n), without calling sort.",
+    examples: [{ input: "nums = [-4, -1, 0, 3, 10]", output: "[0, 1, 9, 16, 100]" }],
+    fn: "sorted_squares",
+    tests: [
+      { args: [[-4, -1, 0, 3, 10]], expected: [0, 1, 9, 16, 100] },
+      { args: [[-7, -3, 2, 3, 11]], expected: [4, 9, 9, 49, 121] },
+      { args: [[1]], expected: [1] },
+      { args: [[-3, -2, -1]], expected: [1, 4, 9] },
+    ],
+    starter: String.raw`def sorted_squares(nums):
+    # Hint: the biggest square is at one of the two ends. Compare nums[left]
+    # and nums[right] and fill the answer from the back.
+    pass
+
+
+print(sorted_squares([-4, -1, 0, 3, 10]))
+`,
+    solution: String.raw`def sorted_squares(nums):
+    result = [0] * len(nums)
+    left, right = 0, len(nums) - 1
+    for pos in range(len(nums) - 1, -1, -1):
+        if abs(nums[left]) > abs(nums[right]):
+            result[pos] = nums[left] ** 2
+            left += 1
+        else:
+            result[pos] = nums[right] ** 2
+            right -= 1
+    return result
+
+
+print(sorted_squares([-4, -1, 0, 3, 10]))
+`,
+  },
+  {
+    id: "maximum-average-subarray",
+    title: "Maximum Average Subarray I",
+    pattern: "sliding-window",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 643", url: LC("maximum-average-subarray-i") }],
+    desc: "Find the contiguous subarray of exactly k numbers with the largest average, and return that average.",
+    examples: [{ input: "nums = [1, 12, -5, -6, 50, 3], k = 4", output: "12.75  ((12 - 5 - 6 + 50) / 4)" }],
+    fn: "find_max_average",
+    tests: [
+      { args: [[1, 12, -5, -6, 50, 3], 4], expected: 12.75 },
+      { args: [[5], 1], expected: 5 },
+      { args: [[0, 4, 0, 3, 2], 1], expected: 4 },
+      { args: [[1, 2, 3, 4], 2], expected: 3.5 },
+    ],
+    starter: String.raw`def find_max_average(nums, k):
+    # Hint: keep the sum of the current window of size k; slide it by
+    # adding nums[right] and removing nums[left].
+    pass
+
+
+print(find_max_average([1, 12, -5, -6, 50, 3], 4))
+`,
+    solution: String.raw`def find_max_average(nums, k):
+    window = sum(nums[:k])
+    best = window
+    left = 0
+    for right in range(k, len(nums)):
+        window += nums[right] - nums[left]
+        left += 1
+        best = max(best, window)
+    return best / k
+
+
+print(find_max_average([1, 12, -5, -6, 50, 3], 4))
+`,
+  },
+  {
+    id: "search-insert-position",
+    title: "Search Insert Position",
+    pattern: "binary-search",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 35", url: LC("search-insert-position") }],
+    desc: "nums is sorted and has no duplicates. Return the index of target if it is there. Otherwise return the index where it would go to keep the list sorted.",
+    examples: [
+      { input: "nums = [1, 3, 5, 6], target = 5", output: "2" },
+      { input: "nums = [1, 3, 5, 6], target = 2", output: "1" },
+    ],
+    fn: "search_insert",
+    tests: [
+      { args: [[1, 3, 5, 6], 5], expected: 2 },
+      { args: [[1, 3, 5, 6], 2], expected: 1 },
+      { args: [[1, 3, 5, 6], 7], expected: 4 },
+      { args: [[1, 3, 5, 6], 0], expected: 0 },
+      { args: [[1], 1], expected: 0 },
+    ],
+    starter: String.raw`def search_insert(nums, target):
+    # Hint: ordinary binary search; when the loop ends, lo is the insert position.
+    pass
+
+
+print(search_insert([1, 3, 5, 6], 2))
+`,
+    solution: String.raw`def search_insert(nums, target):
+    lo, hi = 0, len(nums) - 1
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if nums[mid] == target:
+            return mid
+        if nums[mid] < target:
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return lo
+
+
+print(search_insert([1, 3, 5, 6], 2))
+`,
+  },
+  {
+    id: "first-unique-character",
+    title: "First Unique Character in a String",
+    pattern: "frequency-counting",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 387", url: LC("first-unique-character-in-a-string") }],
+    desc: "Return the index of the first character that appears exactly once in the string, or -1 if every character repeats.",
+    examples: [
+      { input: 's = "leetcode"', output: "0" },
+      { input: 's = "loveleetcode"', output: "2" },
+    ],
+    fn: "first_uniq_char",
+    tests: [
+      { args: ["leetcode"], expected: 0 },
+      { args: ["loveleetcode"], expected: 2 },
+      { args: ["aabb"], expected: -1 },
+      { args: ["z"], expected: 0 },
+    ],
+    starter: String.raw`def first_uniq_char(s):
+    # Hint: first count every character, then scan again for a count of 1.
+    pass
+
+
+print(first_uniq_char("loveleetcode"))
+`,
+    solution: String.raw`def first_uniq_char(s):
+    count = {}
+    for ch in s:
+        count[ch] = count.get(ch, 0) + 1
+    for i in range(len(s)):
+        if count[s[i]] == 1:
+            return i
+    return -1
+
+
+print(first_uniq_char("loveleetcode"))
+`,
+  },
+  {
+    id: "transpose-matrix",
+    title: "Transpose Matrix",
+    pattern: "matrix-traversal",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 867", url: LC("transpose-matrix") }],
+    desc: "Return the transpose of the matrix, i.e. flip it over its main diagonal so that rows become columns. An m × n matrix becomes n × m.",
+    examples: [{ input: "matrix = [[1, 2, 3], [4, 5, 6]]", output: "[[1, 4], [2, 5], [3, 6]]" }],
+    fn: "transpose",
+    tests: [
+      { args: [[[1, 2, 3], [4, 5, 6], [7, 8, 9]]], expected: [[1, 4, 7], [2, 5, 8], [3, 6, 9]] },
+      { args: [[[1, 2, 3], [4, 5, 6]]], expected: [[1, 4], [2, 5], [3, 6]] },
+      { args: [[[5]]], expected: [[5]] },
+      { args: [[[1], [2]]], expected: [[1, 2]] },
+    ],
+    starter: String.raw`def transpose(matrix):
+    # Hint: build a cols x rows grid, then result[c][r] = matrix[r][c].
+    pass
+
+
+print(transpose([[1, 2, 3], [4, 5, 6]]))
+`,
+    solution: String.raw`def transpose(matrix):
+    rows, cols = len(matrix), len(matrix[0])
+    result = [[0] * rows for _ in range(cols)]
+    for r in range(rows):
+        for c in range(cols):
+            result[c][r] = matrix[r][c]
+    return result
+
+
+print(transpose([[1, 2, 3], [4, 5, 6]]))
+`,
+  },
+  {
+    id: "next-greater-element-i",
+    title: "Next Greater Element I",
+    pattern: "monotonic-stack",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 496", url: LC("next-greater-element-i") }],
+    desc: "nums1 is a subset of nums2, and all values are distinct. For each x in nums1, find x in nums2 and return the first number to its right that is bigger than x, or -1 if there is none.",
+    examples: [{ input: "nums1 = [4, 1, 2], nums2 = [1, 3, 4, 2]", output: "[-1, 3, -1]" }],
+    fn: "next_greater_element",
+    tests: [
+      { args: [[4, 1, 2], [1, 3, 4, 2]], expected: [-1, 3, -1] },
+      { args: [[2, 4], [1, 2, 3, 4]], expected: [3, -1] },
+      { args: [[1], [1]], expected: [-1] },
+      { args: [[1, 3, 5], [6, 5, 4, 3, 2, 1, 7]], expected: [7, 7, 7] },
+    ],
+    starter: String.raw`def next_greater_element(nums1, nums2):
+    # Hint: one pass over nums2 with a decreasing stack gives the next greater
+    # value of every number; store them in a dict, then look up nums1.
+    pass
+
+
+print(next_greater_element([4, 1, 2], [1, 3, 4, 2]))
+`,
+    solution: String.raw`def next_greater_element(nums1, nums2):
+    next_greater = {}
+    stack = []
+    for x in nums2:
+        while stack and stack[-1] < x:
+            next_greater[stack.pop()] = x
+        stack.append(x)
+    return [next_greater.get(x, -1) for x in nums1]
+
+
+print(next_greater_element([4, 1, 2], [1, 3, 4, 2]))
+`,
+  },
+  {
+    id: "find-pivot-index",
+    title: "Find Pivot Index",
+    pattern: "prefix-sum",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 724", url: LC("find-pivot-index") }],
+    desc: "The pivot index is where the sum of everything to its left equals the sum of everything to its right, not counting the pivot itself. Return the leftmost pivot index, or -1 if there is none.",
+    examples: [{ input: "nums = [1, 7, 3, 6, 5, 6]", output: "3  (1 + 7 + 3 = 5 + 6 = 11)" }],
+    fn: "pivot_index",
+    tests: [
+      { args: [[1, 7, 3, 6, 5, 6]], expected: 3 },
+      { args: [[1, 2, 3]], expected: -1 },
+      { args: [[2, 1, -1]], expected: 0 },
+      { args: [[0]], expected: 0 },
+    ],
+    starter: String.raw`def pivot_index(nums):
+    # Hint: right sum = total - left sum - nums[i]. Keep a running left sum.
+    pass
+
+
+print(pivot_index([1, 7, 3, 6, 5, 6]))
+`,
+    solution: String.raw`def pivot_index(nums):
+    total = sum(nums)
+    left_sum = 0
+    for i in range(len(nums)):
+        if left_sum == total - left_sum - nums[i]:
+            return i
+        left_sum += nums[i]
+    return -1
+
+
+print(pivot_index([1, 7, 3, 6, 5, 6]))
+`,
+  },
+  {
+    id: "meeting-rooms",
+    title: "Meeting Rooms",
+    pattern: "overlapping-intervals",
+    difficulty: "Easy",
+    sources: [
+      { site: "LintCode 920", url: "https://www.lintcode.com/problem/920/" },
+      { site: "LeetCode 252", url: LC("meeting-rooms") },
+    ],
+    desc: "Each interval [start, end] is a meeting. Return True if one person can attend all of them, meaning no two meetings overlap. A meeting may start at the same moment another one ends.",
+    examples: [
+      { input: "intervals = [[0, 30], [5, 10], [15, 20]]", output: "False" },
+      { input: "intervals = [[7, 10], [2, 4]]", output: "True" },
+    ],
+    fn: "can_attend_meetings",
+    tests: [
+      { args: [[[0, 30], [5, 10], [15, 20]]], expected: false },
+      { args: [[[7, 10], [2, 4]]], expected: true },
+      { args: [[]], expected: true },
+      { args: [[[1, 5], [5, 8]]], expected: true },
+      { args: [[[9, 12], [1, 3], [2, 4]]], expected: false },
+    ],
+    starter: String.raw`def can_attend_meetings(intervals):
+    # Hint: sort by start time; check each meeting against the one before it.
+    pass
+
+
+print(can_attend_meetings([[0, 30], [5, 10], [15, 20]]))
+`,
+    solution: String.raw`def can_attend_meetings(intervals):
+    intervals.sort()
+    for i in range(1, len(intervals)):
+        if intervals[i][0] < intervals[i - 1][1]:
+            return False
+    return True
+
+
+print(can_attend_meetings([[0, 30], [5, 10], [15, 20]]))
+`,
+  },
+  {
+    id: "assign-cookies",
+    title: "Assign Cookies",
+    pattern: "greedy",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 455", url: LC("assign-cookies") }],
+    desc: "Child i is happy with any cookie of size at least g[i]. Cookie j has size s[j], and each child gets at most one cookie. Return the largest number of happy children.",
+    examples: [
+      { input: "g = [1, 2, 3], s = [1, 1]", output: "1" },
+      { input: "g = [1, 2], s = [1, 2, 3]", output: "2" },
+    ],
+    fn: "find_content_children",
+    tests: [
+      { args: [[1, 2, 3], [1, 1]], expected: 1 },
+      { args: [[1, 2], [1, 2, 3]], expected: 2 },
+      { args: [[10, 9, 8, 7], [5, 6, 7, 8]], expected: 2 },
+      { args: [[1], []], expected: 0 },
+    ],
+    starter: String.raw`def find_content_children(g, s):
+    # Hint: sort both lists; give the smallest cookie that fits to the
+    # least greedy child who is still waiting.
+    pass
+
+
+print(find_content_children([1, 2, 3], [1, 1]))
+`,
+    solution: String.raw`def find_content_children(g, s):
+    g.sort()
+    s.sort()
+    i = 0                      # next child to satisfy
+    for j in range(len(s)):
+        if i < len(g) and s[j] >= g[i]:
+            i += 1
+    return i
+
+
+print(find_content_children([1, 2], [1, 2, 3]))
+`,
+  },
+  {
+    id: "last-stone-weight",
+    title: "Last Stone Weight",
+    pattern: "top-k",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 1046", url: LC("last-stone-weight") }],
+    desc: "Each turn, smash the two heaviest stones together. Stones of equal weight both disappear. Otherwise the lighter one disappears and the heavier one loses that much weight. Return the weight of the last stone, or 0 if none is left.",
+    examples: [{ input: "stones = [2, 7, 4, 1, 8, 1]", output: "1" }],
+    fn: "last_stone_weight",
+    tests: [
+      { args: [[2, 7, 4, 1, 8, 1]], expected: 1 },
+      { args: [[1]], expected: 1 },
+      { args: [[3, 3]], expected: 0 },
+      { args: [[10, 4, 2, 10]], expected: 2 },
+    ],
+    starter: String.raw`import heapq
+
+
+def last_stone_weight(stones):
+    # Hint: heapq is a min-heap, so store negative weights to pop the heaviest.
+    pass
+
+
+print(last_stone_weight([2, 7, 4, 1, 8, 1]))
+`,
+    solution: String.raw`import heapq
+
+
+def last_stone_weight(stones):
+    heap = [-w for w in stones]       # max-heap via negatives
+    heapq.heapify(heap)
+    while len(heap) > 1:
+        a = -heapq.heappop(heap)      # heaviest
+        b = -heapq.heappop(heap)      # second heaviest
+        if a != b:
+            heapq.heappush(heap, -(a - b))
+    return -heap[0] if heap else 0
+
+
+print(last_stone_weight([2, 7, 4, 1, 8, 1]))
+`,
+  },
+  {
+    id: "sum-of-all-subset-xor-totals",
+    title: "Sum of All Subset XOR Totals",
+    pattern: "backtracking",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 1863", url: LC("sum-of-all-subset-xor-totals") }],
+    desc: "The XOR total of a list is all of its elements XORed together (0 for an empty list). Return the sum of the XOR totals of every subset of nums.",
+    examples: [{ input: "nums = [1, 3]", output: "6  (0 + 1 + 3 + (1 ^ 3 = 2))" }],
+    fn: "subset_xor_sum",
+    tests: [
+      { args: [[1, 3]], expected: 6 },
+      { args: [[5, 1, 6]], expected: 28 },
+      { args: [[3, 4, 5, 6, 7, 8]], expected: 480 },
+      { args: [[7]], expected: 7 },
+    ],
+    starter: String.raw`def subset_xor_sum(nums):
+    # Hint: at index i either take nums[i] (xor it in) or skip it; add up the
+    # running xor when you reach the end.
+    pass
+
+
+print(subset_xor_sum([1, 3]))
+`,
+    solution: String.raw`def subset_xor_sum(nums):
+    def explore(i, xor):
+        if i == len(nums):
+            return xor
+        take = explore(i + 1, xor ^ nums[i])
+        skip = explore(i + 1, xor)
+        return take + skip
+
+    return explore(0, 0)
+
+
+print(subset_xor_sum([1, 3]))
+`,
+  },
+  {
+    id: "binary-tree-inorder-traversal",
+    title: "Binary Tree Inorder Traversal",
+    pattern: "binary-tree-traversal",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 94", url: LC("binary-tree-inorder-traversal") }],
+    desc: "Return the node values in in-order: left subtree, then the node, then the right subtree. Tests pass the tree as a TreeNode built from a level-order list.",
+    examples: [{ input: "root = [1, None, 2, 3]", output: "[1, 3, 2]" }],
+    fn: "inorder_traversal",
+    argTypes: ["tree"],
+    tests: [
+      { args: [[1, null, 2, 3]], expected: [1, 3, 2] },
+      { args: [[]], expected: [] },
+      { args: [[1]], expected: [1] },
+      { args: [[4, 2, 6, 1, 3, 5, 7]], expected: [1, 2, 3, 4, 5, 6, 7] },
+    ],
+    starter: String.raw`class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+def inorder_traversal(root):
+    # Hint: visit(node): visit(node.left), record node.val, visit(node.right).
+    pass
+
+
+root = TreeNode(1, None, TreeNode(2, TreeNode(3)))
+print(inorder_traversal(root))
+`,
+    solution: String.raw`class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+def inorder_traversal(root):
+    out = []
+
+    def visit(node):
+        if node is None:
+            return
+        visit(node.left)
+        out.append(node.val)
+        visit(node.right)
+
+    visit(root)
+    return out
+
+
+root = TreeNode(1, None, TreeNode(2, TreeNode(3)))
+print(inorder_traversal(root))
+`,
+  },
+  {
+    id: "flood-fill",
+    title: "Flood Fill",
+    pattern: "dfs",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 733", url: LC("flood-fill") }],
+    desc: "Starting at pixel (sr, sc), repaint that pixel and every pixel connected to it (up, down, left or right) that has the same original colour with the new color. Return the image.",
+    examples: [{ input: "image = [[1,1,1],[1,1,0],[1,0,1]], sr = 1, sc = 1, color = 2", output: "[[2,2,2],[2,2,0],[2,0,1]]" }],
+    fn: "flood_fill",
+    tests: [
+      { args: [[[1, 1, 1], [1, 1, 0], [1, 0, 1]], 1, 1, 2], expected: [[2, 2, 2], [2, 2, 0], [2, 0, 1]] },
+      { args: [[[0, 0, 0], [0, 0, 0]], 0, 0, 0], expected: [[0, 0, 0], [0, 0, 0]] },
+      { args: [[[0, 0, 0], [0, 1, 1]], 1, 1, 1], expected: [[0, 0, 0], [0, 1, 1]] },
+      { args: [[[1]], 0, 0, 5], expected: [[5]] },
+    ],
+    starter: String.raw`def flood_fill(image, sr, sc, color):
+    # Hint: remember the original colour, then DFS from (sr, sc).
+    # Careful: if it already equals color there is nothing to do.
+    pass
+
+
+print(flood_fill([[1, 1, 1], [1, 1, 0], [1, 0, 1]], 1, 1, 2))
+`,
+    solution: String.raw`def flood_fill(image, sr, sc, color):
+    rows, cols = len(image), len(image[0])
+    original = image[sr][sc]
+    if original == color:
+        return image
+
+    def paint(r, c):
+        if r < 0 or r >= rows or c < 0 or c >= cols or image[r][c] != original:
+            return
+        image[r][c] = color
+        paint(r + 1, c)
+        paint(r - 1, c)
+        paint(r, c + 1)
+        paint(r, c - 1)
+
+    paint(sr, sc)
+    return image
+
+
+print(flood_fill([[1, 1, 1], [1, 1, 0], [1, 0, 1]], 1, 1, 2))
+`,
+  },
+  {
+    id: "find-if-path-exists-in-graph",
+    title: "Find if Path Exists in Graph",
+    pattern: "bfs",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 1971", url: LC("find-if-path-exists-in-graph") }],
+    desc: "An undirected graph has n vertices, numbered 0 to n-1, and a list of edges [u, v]. Return True if there is a path from source to destination.",
+    examples: [
+      { input: "n = 3, edges = [[0,1],[1,2],[2,0]], source = 0, destination = 2", output: "True" },
+      { input: "n = 6, edges = [[0,1],[0,2],[3,5],[5,4],[4,3]], source = 0, destination = 5", output: "False" },
+    ],
+    fn: "valid_path",
+    tests: [
+      { args: [3, [[0, 1], [1, 2], [2, 0]], 0, 2], expected: true },
+      { args: [6, [[0, 1], [0, 2], [3, 5], [5, 4], [4, 3]], 0, 5], expected: false },
+      { args: [1, [], 0, 0], expected: true },
+      { args: [4, [[0, 1], [1, 2], [2, 3]], 3, 0], expected: true },
+    ],
+    starter: String.raw`from collections import deque
+
+
+def valid_path(n, edges, source, destination):
+    # Hint: build an adjacency list, then BFS from source with a seen set.
+    pass
+
+
+print(valid_path(3, [[0, 1], [1, 2], [2, 0]], 0, 2))
+`,
+    solution: String.raw`from collections import deque
+
+
+def valid_path(n, edges, source, destination):
+    graph = {v: [] for v in range(n)}
+    for u, v in edges:
+        graph[u].append(v)
+        graph[v].append(u)
+    seen = {source}
+    queue = deque([source])
+    while queue:
+        node = queue.popleft()
+        if node == destination:
+            return True
+        for nxt in graph[node]:
+            if nxt not in seen:
+                seen.add(nxt)
+                queue.append(nxt)
+    return False
+
+
+print(valid_path(6, [[0, 1], [0, 2], [3, 5], [5, 4], [4, 3]], 0, 5))
+`,
+  },
+  {
+    id: "min-cost-climbing-stairs",
+    title: "Min Cost Climbing Stairs",
+    pattern: "dynamic-programming",
+    difficulty: "Easy",
+    sources: [{ site: "LeetCode 746", url: LC("min-cost-climbing-stairs") }],
+    desc: "Stepping on stair i costs cost[i], and from there you climb 1 or 2 stairs. You may start on stair 0 or stair 1. Return the cheapest way to get past the top, which is index len(cost).",
+    examples: [
+      { input: "cost = [10, 15, 20]", output: "15" },
+      { input: "cost = [1, 100, 1, 1, 1, 100, 1, 1, 100, 1]", output: "6" },
+    ],
+    fn: "min_cost_climbing_stairs",
+    tests: [
+      { args: [[10, 15, 20]], expected: 15 },
+      { args: [[1, 100, 1, 1, 1, 100, 1, 1, 100, 1]], expected: 6 },
+      { args: [[0, 0]], expected: 0 },
+      { args: [[5, 10]], expected: 5 },
+    ],
+    starter: String.raw`def min_cost_climbing_stairs(cost):
+    # Hint: dp[i] = cheapest cost to stand on step i
+    #            = min(dp[i - 1] + cost[i - 1], dp[i - 2] + cost[i - 2])
+    pass
+
+
+print(min_cost_climbing_stairs([10, 15, 20]))
+`,
+    solution: String.raw`def min_cost_climbing_stairs(cost):
+    n = len(cost)
+    dp = [0] * (n + 1)          # dp[0] = dp[1] = 0: free to start there
+    for i in range(2, n + 1):
+        dp[i] = min(dp[i - 1] + cost[i - 1], dp[i - 2] + cost[i - 2])
+    return dp[n]
+
+
+print(min_cost_climbing_stairs([10, 15, 20]))
 `,
   },
 ];

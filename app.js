@@ -30,7 +30,10 @@
   // ---------------------------------------------------------------- items
   // Patterns keep their original ids/hashes; problems live under "p/<id>".
   const patternItems = PATTERNS.map((p, i) => ({ kind: "pattern", key: p.id, num: i + 1, data: p, code: p.code }));
-  const problemItems = PROBLEMS.map((p) => ({ kind: "problem", key: "p/" + p.id, data: p, code: p.starter }));
+  // Easy first within each pattern (stable sort keeps file order otherwise).
+  const RANK = { Easy: 0, Medium: 1, Hard: 2 };
+  const problemItems = PROBLEMS.map((p) => ({ kind: "problem", key: "p/" + p.id, data: p, code: p.starter }))
+    .sort((a, b) => RANK[a.data.difficulty] - RANK[b.data.difficulty]);
   const byKey = new Map([...patternItems, ...problemItems].map((it) => [it.key, it]));
   const patternById = new Map(patternItems.map((it) => [it.data.id, it]));
 
@@ -390,6 +393,7 @@
   });
 
   // ---------------------------------------------------------------- boot
+  $("problem-total").textContent = problemItems.length;
   startWorker();
   select(location.hash.slice(1) || store.get("last") || patternItems[0].key);
   window.addEventListener("hashchange", () => {

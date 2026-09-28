@@ -14,7 +14,7 @@ It ships with runnable examples for 15 must-know DSA patterns:
 | 4 | Frequency Counting | 9 | Greedy | 14 | Breadth-First Search |
 | 5 | Matrix Traversal | 10 | Top K Elements | 15 | Dynamic Programming |
 
-It also has **30 practice problems**, two for each pattern, taken from well-known LeetCode and
+It also has **45 practice problems**, three for each pattern (at least one Easy per pattern), taken from well-known LeetCode and
 HackerRank questions (Valid Palindrome, Longest Substring Without Repeating Characters, Number
 of Islands, Coin Change…). Each problem has:
 
@@ -74,7 +74,7 @@ Cells that changed since the previous step turn **blue**. The cell under a point
 | `tracer.py` | runs inside Pyodide: `sys.settrace` snapshots of every line, JSON-encoded |
 | `viz.js` | renders one snapshot as cards |
 | `patterns.js` | the 15 pattern descriptions and example programs |
-| `problems.js` | the 30 practice problems: statement, examples, tests, starter, solution |
+| `problems.js` | the 45 practice problems: statement, examples, tests, starter, solution |
 | `tests/test_tracer.py` | runs every example through the tracer with regular CPython |
 | `tests/test_problems.py` | checks every solution passes its tests and every starter loads but fails |
 
