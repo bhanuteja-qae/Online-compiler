@@ -1,4 +1,5 @@
-// Page wiring: pattern list, CodeMirror editor, Python worker, step player.
+// Page wiring: sidebar (patterns + practice problems), CodeMirror editor,
+// Python worker, step player and test runner.
 
 (function () {
   "use strict";
@@ -6,12 +7,34 @@
   const $ = (id) => document.getElementById(id);
   const RUN_TIMEOUT_MS = 10000;
 
+  const esc = (s) =>
+    String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+  // JSON test data shown the way Python would print it.
+  function pyRepr(v) {
+    if (v === null) return "None";
+    if (v === true) return "True";
+    if (v === false) return "False";
+    if (typeof v === "string") return JSON.stringify(v);
+    if (Array.isArray(v)) return "[" + v.map(pyRepr).join(", ") + "]";
+    return String(v);
+  }
+
   // ---------------------------------------------------------------- storage (per-viewer convenience only)
   const store = {
     get(k) { try { return localStorage.getItem("pyviz:" + k); } catch { return null; } },
     set(k, v) { try { localStorage.setItem("pyviz:" + k, v); } catch { /* storage unavailable */ } },
     del(k) { try { localStorage.removeItem("pyviz:" + k); } catch { /* storage unavailable */ } },
   };
+
+  // ---------------------------------------------------------------- items
+  // Patterns keep their original ids/hashes; problems live under "p/<id>".
+  const patternItems = PATTERNS.map((p, i) => ({ kind: "pattern", key: p.id, num: i + 1, data: p, code: p.code }));
+  const problemItems = PROBLEMS.map((p) => ({ kind: "problem", key: "p/" + p.id, data: p, code: p.starter }));
+  const byKey = new Map([...patternItems, ...problemItems].map((it) => [it.key, it]));
+  const patternById = new Map(patternItems.map((it) => [it.data.id, it]));
+
+  const isSolved = (id) => store.get("solved:" + id) === "1";
 
   // ---------------------------------------------------------------- editor
   const editor = CodeMirror($("editor"), {
@@ -22,54 +45,150 @@
     indentWithTabs: false,
     extraKeys: {
       Tab: (cm) => cm.replaceSelection("    "),
-      "Ctrl-Enter": () => execute(true),
-      "Cmd-Enter": () => execute(true),
-      "Shift-Enter": () => execute(false),
+      "Ctrl-Enter": () => execute("trace"),
+      "Cmd-Enter": () => execute("trace"),
+      "Shift-Enter": () => execute("run"),
     },
   });
 
-  let current = null;       // pattern object
-  let trace = null;         // {steps, out, error, truncated}
+  let current = null;        // item being edited
+  let viewingSolution = null; // stashed user code while the solution is shown
+  let trace = null;          // {steps, out, error, truncated}
   let stepIndex = 0;
   let playTimer = null;
   let markedLines = [];
 
-  // ---------------------------------------------------------------- pattern list
-  const list = $("pattern-list");
-  PATTERNS.forEach((p, i) => {
+  // ---------------------------------------------------------------- sidebar
+  const patternList = $("pattern-list");
+  patternItems.forEach((it) => {
     const li = document.createElement("li");
-    li.innerHTML = '<button data-id="' + p.id + '"><span class="num">' + (i + 1) + ".</span> " + p.name + "</button>";
-    list.appendChild(li);
-  });
-  list.addEventListener("click", (e) => {
-    const btn = e.target.closest("button[data-id]");
-    if (btn) selectPattern(btn.dataset.id);
+    li.innerHTML = '<button data-key="' + it.key + '"><span class="num">' + it.num + ".</span> " + esc(it.data.name) + "</button>";
+    patternList.appendChild(li);
   });
 
-  function selectPattern(id) {
-    current = PATTERNS.find((p) => p.id === id) || PATTERNS[0];
-    for (const b of list.querySelectorAll("button")) b.classList.toggle("active", b.dataset.id === current.id);
-    const n = PATTERNS.indexOf(current) + 1;
-    $("pattern-info").innerHTML =
-      '<h1><span class="num">' + n + ".</span> " + current.name + '</h1><p class="idea">' + current.idea +
-      '</p><div class="meta"><span><b>Use when</b> ' + current.when + '</span><span class="badge">' + current.complexity + "</span></div>";
-    editor.setValue(store.get("code:" + current.id) || current.code);
+  let difficulty = "";
+  function renderProblemList() {
+    const q = $("problem-search").value.trim().toLowerCase();
+    let html = "";
+    for (const pat of patternItems) {
+      const items = problemItems.filter((it) => it.data.pattern === pat.data.id &&
+        (!difficulty || it.data.difficulty === difficulty) &&
+        (!q || (it.data.title + " " + it.data.sources.map((s) => s.site).join(" ")).toLowerCase().includes(q)));
+      if (!items.length) continue;
+      html += '<h3 class="group">' + pat.num + ". " + esc(pat.data.name) + "</h3><ol>";
+      for (const it of items) {
+        html += '<li><button data-key="' + it.key + '"' + (current === it ? ' class="active"' : "") + ">" +
+          '<span class="diff-dot ' + it.data.difficulty.toLowerCase() + '" title="' + it.data.difficulty + '"></span>' +
+          '<span class="ptitle">' + esc(it.data.title) + "</span>" +
+          (isSolved(it.data.id) ? '<span class="solved" title="Solved">✓</span>' : "") + "</button></li>";
+      }
+      html += "</ol>";
+    }
+    $("problem-list").innerHTML = html || '<p class="muted">No problems match.</p>';
+    const solved = problemItems.filter((it) => isSolved(it.data.id)).length;
+    $("solved-count").textContent = solved + "/" + problemItems.length;
+  }
+
+  function showTab(tab) {
+    for (const t of document.querySelectorAll(".tab")) t.classList.toggle("active", t.dataset.tab === tab);
+    patternList.hidden = tab !== "patterns";
+    $("problem-panel").hidden = tab !== "problems";
+  }
+
+  document.querySelector(".tabs").addEventListener("click", (e) => {
+    const t = e.target.closest(".tab");
+    if (t) showTab(t.dataset.tab);
+  });
+  $("difficulty-filter").addEventListener("click", (e) => {
+    const f = e.target.closest(".filter");
+    if (!f) return;
+    difficulty = f.dataset.diff;
+    for (const b of document.querySelectorAll(".filter")) b.classList.toggle("active", b === f);
+    renderProblemList();
+  });
+  $("problem-search").addEventListener("input", renderProblemList);
+  document.querySelector(".sidebar").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-key]");
+    if (btn) select(btn.dataset.key);
+  });
+
+  // ---------------------------------------------------------------- info card
+  function patternInfo(p, num) {
+    const practice = problemItems.filter((it) => it.data.pattern === p.id)
+      .map((it) => '<a href="#' + it.key + '" class="plink"><span class="diff-dot ' + it.data.difficulty.toLowerCase() + '"></span>' +
+        esc(it.data.title) + (isSolved(it.data.id) ? " ✓" : "") + "</a>").join("");
+    return '<h1><span class="num">' + num + ".</span> " + esc(p.name) + '</h1><p class="idea">' + esc(p.idea) +
+      '</p><div class="meta"><span><b>Use when</b> ' + esc(p.when) + '</span><span class="badge">' + esc(p.complexity) + "</span></div>" +
+      (practice ? '<div class="practice"><b>Practice</b>' + practice + "</div>" : "");
+  }
+
+  function problemInfo(p) {
+    const pat = patternById.get(p.pattern);
+    const sources = p.sources.map((s) => '<a class="src" href="' + s.url + '" target="_blank" rel="noopener">' + esc(s.site) + " ↗</a>").join("");
+    const examples = p.examples.map((ex) => '<div class="example"><div><span class="muted">Input</span> <code>' + esc(ex.input) +
+      '</code></div><div><span class="muted">Output</span> <code>' + esc(ex.output) + "</code></div></div>").join("");
+    return '<div class="ptags"><span class="diff ' + p.difficulty.toLowerCase() + '">' + p.difficulty + "</span>" +
+      '<a class="tag" href="#' + pat.key + '">' + pat.num + ". " + esc(pat.data.name) + "</a>" + sources +
+      (isSolved(p.id) ? '<span class="solved-badge">✓ Solved</span>' : "") + "</div>" +
+      "<h1>" + esc(p.title) + '</h1><p class="idea">' + esc(p.desc) + "</p>" + examples +
+      '<p class="muted small">Write <code>' + esc(p.fn) + "(…)</code>, then press <b>✓ Submit</b> to run " + p.tests.length +
+      " test cases. Statement paraphrased; see the original for full details.</p>";
+  }
+
+  function renderInfo() {
+    $("pattern-info").innerHTML = current.kind === "pattern" ? patternInfo(current.data, current.num) : problemInfo(current.data);
+  }
+
+  // ---------------------------------------------------------------- selection
+  function select(key) {
+    const it = byKey.get(key) || patternItems[0];
+    viewingSolution = null;
+    current = it;
+    for (const b of patternList.querySelectorAll("button")) b.classList.toggle("active", b.dataset.key === it.key);
+    const isProblem = it.kind === "problem";
+    $("btn-submit").hidden = !isProblem;
+    $("btn-solution").hidden = !isProblem;
+    $("btn-solution").textContent = "Show solution";
+    showTab(isProblem ? "problems" : "patterns");
+    renderProblemList();
+    renderInfo();
+    editor.setValue(store.get("code:" + it.key) || it.code);
     editor.clearHistory();
-    store.set("last", current.id);
-    if (location.hash !== "#" + current.id) history.replaceState(null, "", "#" + current.id);
+    store.set("last", it.key);
+    if (location.hash !== "#" + it.key) history.replaceState(null, "", "#" + it.key);
     clearTrace("Press <b>▶ Visualize</b> to step through your code.");
-    $("output").textContent = "";
+    setOutput("Output", "");
   }
 
   editor.on("change", () => {
-    if (!current) return;
+    if (!current || viewingSolution !== null) return;
     const code = editor.getValue();
-    if (code === current.code) store.del("code:" + current.id);
-    else store.set("code:" + current.id, code);
+    if (code === current.code) store.del("code:" + current.key);
+    else store.set("code:" + current.key, code);
     if (trace) clearTrace("Code changed · press <b>▶ Visualize</b> again.");
   });
 
-  $("btn-reset").onclick = () => { store.del("code:" + current.id); editor.setValue(current.code); };
+  $("btn-reset").onclick = () => {
+    if (viewingSolution !== null) toggleSolution();
+    store.del("code:" + current.key);
+    editor.setValue(current.code);
+  };
+
+  function toggleSolution() {
+    clearTrace("Press <b>▶ Visualize</b> to step through your code.");
+    if (viewingSolution === null) {
+      const mine = editor.getValue();
+      viewingSolution = mine;
+      editor.setValue(current.data.solution);
+      $("btn-solution").textContent = "Back to my code";
+    } else {
+      const mine = viewingSolution;
+      viewingSolution = null;
+      editor.setValue(mine);
+      $("btn-solution").textContent = "Show solution";
+    }
+  }
+  $("btn-solution").onclick = toggleSolution;
 
   // ---------------------------------------------------------------- worker
   let worker = null, ready = false, runId = 0, pending = null;
@@ -83,14 +202,21 @@
     worker.onmessage = (e) => {
       const m = e.data;
       if (m.type === "ready") { ready = true; setStatus("Python ready", "ok"); if (pending) send(pending); }
-      else if (m.type === "fatal") setStatus("Python failed to load", "err"), ($("output").textContent = m.msg);
-      else if (m.type === "result" && pending && m.id === pending.id) finish(m.result, pending.trace);
+      else if (m.type === "fatal") { setStatus("Python failed to load", "err"); setOutput("Output", m.msg); }
+      else if (m.type === "result" && pending && m.id === pending.id) finish(m.result, pending);
     };
   }
 
   function send(job) {
-    setStatus(job.trace ? "Tracing…" : "Running…", "busy");
-    worker.postMessage({ id: job.id, code: job.code, stdin: job.stdin, trace: job.trace });
+    setStatus(job.mode === "trace" ? "Tracing…" : job.mode === "test" ? "Testing…" : "Running…", "busy");
+    const msg = { id: job.id, code: job.code };
+    if (job.mode === "test") {
+      const p = current.data;
+      Object.assign(msg, { mode: "test", tests: p.tests, fn: p.fn, compare: p.compare || "exact", argTypes: p.argTypes || [] });
+    } else {
+      Object.assign(msg, { mode: "run", stdin: $("stdin").value, trace: job.mode === "trace" });
+    }
+    worker.postMessage(msg);
     job.timer = setTimeout(() => {
       worker.terminate();
       pending = null;
@@ -100,39 +226,77 @@
     }, RUN_TIMEOUT_MS);
   }
 
-  function execute(withTrace) {
+  function execute(mode) {
     if (pending) return;
+    if (mode === "test" && (!current || current.kind !== "problem")) return;
     stop();
-    pending = { id: ++runId, code: editor.getValue(), stdin: $("stdin").value, trace: withTrace };
+    pending = { id: ++runId, code: editor.getValue(), mode, item: current };
     setButtons(true);
-    $("output").textContent = ready ? "" : "Loading Python (first run downloads ~10 MB)…";
+    setOutput(mode === "test" ? "Test results" : "Output", ready ? "" : "Loading Python (first run downloads ~10 MB)…");
     if (ready) send(pending);
   }
 
-  function finish(result, withTrace) {
-    clearTimeout(pending.timer);
+  function finish(result, job) {
+    clearTimeout(job.timer);
     pending = null;
     setButtons(false);
     setStatus("Python ready", "ok");
-    if (withTrace && result.steps.length) {
+    if (job.item !== current) return; // user switched away mid-run
+    if (job.mode === "test") return showTests(result, job);
+    if (job.mode === "trace" && result.steps.length) {
       trace = result;
       stepIndex = 0;
       $("step-slider").max = result.steps.length - 1;
       showStep(0);
       play();
     } else {
-      clearTrace(withTrace ? "Nothing to visualize." : "Ran without tracing · press <b>▶ Visualize</b> to see the steps.");
+      clearTrace(job.mode === "trace" ? "Nothing to visualize." : "Ran without tracing · press <b>▶ Visualize</b> to see the steps.");
       showOutput(result.out, result.error, result.truncated);
       if (result.error && result.error.line) markLine(result.error.line, "cm-error-line");
     }
   }
 
   function setButtons(busy) {
-    $("btn-viz").disabled = busy;
-    $("btn-run").disabled = busy;
+    for (const id of ["btn-viz", "btn-run", "btn-submit"]) $(id).disabled = busy;
+  }
+
+  // ---------------------------------------------------------------- tests
+  function showTests(result, job) {
+    const p = job.item.data;
+    unmarkLines();
+    const el = $("output");
+    if (result.error) {
+      setOutput("Test results", "");
+      el.innerHTML = '<span class="err">' + esc(result.error.msg) + "</span>";
+      if (result.error.line) markLine(result.error.line, "cm-error-line");
+      return;
+    }
+    const passed = result.results.filter((r) => r.pass).length;
+    const all = passed === p.tests.length;
+    let html = '<div class="verdict ' + (all ? "pass" : "fail") + '">' + (all ? "✓ Accepted" : "✗ Wrong answer") +
+      " · " + passed + " / " + p.tests.length + " tests passed</div>";
+    result.results.forEach((r, i) => {
+      const t = p.tests[i];
+      html += '<div class="test ' + (r.pass ? "pass" : "fail") + '"><span class="mark">' + (r.pass ? "✓" : "✗") + "</span>" +
+        '<div><code class="call">' + esc(p.fn) + "(" + esc(t.args.map(pyRepr).join(", ")) + ")</code>" +
+        (r.pass ? "" : '<div class="detail">expected <code>' + esc(pyRepr(t.expected)) + "</code> · got <code>" +
+          esc(r.error || r.got) + "</code></div>") + "</div></div>";
+    });
+    setOutput("Test results", "");
+    el.innerHTML = html;
+    if (all && viewingSolution === null) {
+      store.set("solved:" + p.id, "1");
+      renderProblemList();
+      renderInfo();
+    }
   }
 
   // ---------------------------------------------------------------- player
+  function setOutput(title, text) {
+    $("output-title").textContent = title;
+    $("output").textContent = text;
+  }
+
   function clearTrace(message) {
     stop();
     trace = null;
@@ -156,6 +320,7 @@
 
   function showOutput(out, error, truncated) {
     const el = $("output");
+    $("output-title").textContent = "Output";
     el.innerHTML = "";
     el.append(document.createTextNode(out));
     if (truncated) el.insertAdjacentHTML("beforeend", '<span class="warn">\n[stopped after the step limit: too many steps to visualize]</span>');
@@ -207,8 +372,9 @@
     $("btn-play").textContent = "▶";
   }
 
-  $("btn-viz").onclick = () => execute(true);
-  $("btn-run").onclick = () => execute(false);
+  $("btn-viz").onclick = () => execute("trace");
+  $("btn-run").onclick = () => execute("run");
+  $("btn-submit").onclick = () => execute("test");
   $("btn-play").onclick = () => (playTimer ? stop() : play());
   $("btn-first").onclick = () => { stop(); showStep(0); };
   $("btn-prev").onclick = () => { stop(); showStep(stepIndex - 1); };
@@ -225,9 +391,9 @@
 
   // ---------------------------------------------------------------- boot
   startWorker();
-  selectPattern(location.hash.slice(1) || store.get("last") || PATTERNS[0].id);
+  select(location.hash.slice(1) || store.get("last") || patternItems[0].key);
   window.addEventListener("hashchange", () => {
-    const id = location.hash.slice(1);
-    if (!current || id !== current.id) selectPattern(id);
+    const key = location.hash.slice(1);
+    if (!current || key !== current.key) select(key);
   });
 })();

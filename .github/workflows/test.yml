@@ -16,4 +16,5 @@ jobs:
         with:
           node-version: "22"
       - run: python tests/test_tracer.py
-      - run: node --check app.js && node --check viz.js && node --check worker.js && node --check patterns.js
+      - run: python tests/test_problems.py
+      - run: node --check app.js && node --check viz.js && node --check worker.js && node --check patterns.js && node --check problems.js

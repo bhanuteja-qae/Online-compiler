@@ -200,3 +200,78 @@ def run_user(code, stdin_text="", trace=True):
     return json.dumps(
         {"steps": tracer.steps, "out": buf.getvalue(), "error": error, "truncated": truncated}
     )
+
+
+# ---------------------------------------------------------------- problem tests
+
+
+class _TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+def _build_tree(values, cls):
+    """Level-order list (None = missing child), LeetCode style -> tree of cls."""
+    if not values or values[0] is None:
+        return None
+    root = cls(values[0])
+    queue, i = deque([root]), 1
+    while queue and i < len(values):
+        node = queue.popleft()
+        for side in ("left", "right"):
+            if i < len(values) and values[i] is not None:
+                child = cls(values[i])
+                setattr(node, side, child)
+                queue.append(child)
+            i += 1
+    return root
+
+
+def _normalize(value, compare):
+    value = json.loads(json.dumps(value, default=repr))  # tuples -> lists
+    if compare == "unordered" and isinstance(value, list):
+        return sorted(value, key=repr)
+    if compare == "nested_unordered" and isinstance(value, list):
+        return sorted((sorted(x, key=repr) if isinstance(x, list) else x for x in value), key=repr)
+    return value
+
+
+def run_tests(code, tests_json, fn_name, compare="exact", arg_types_json="[]"):
+    """Load the user's code, then call fn_name on every test case.
+
+    Returns JSON {"error": {...} | null, "results": [{"pass", "got", "error"}]}.
+    Output printed by the code (e.g. its own "try it" prints) is discarded.
+    """
+    tests = json.loads(tests_json)
+    arg_types = json.loads(arg_types_json)
+    linecache.cache[FILENAME] = (len(code), None, code.splitlines(True), FILENAME)
+    saved = sys.stdout, sys.stderr, sys.stdin
+    sys.stdout = sys.stderr = io.StringIO()
+    sys.stdin = io.StringIO("")
+    g = {"__name__": "__main__", "__builtins__": builtins}
+    results = []
+    try:
+        try:
+            exec(compile(code, FILENAME, "exec"), g)
+        except BaseException as e:  # noqa: BLE001
+            return json.dumps({"error": _format_error(e), "results": []})
+        fn = g.get(fn_name)
+        if not callable(fn):
+            return json.dumps({"error": {"msg": "Define a function named %s(...)" % fn_name, "line": None}, "results": []})
+        tree_cls = g.get("TreeNode", _TreeNode)
+        for t in tests:
+            args = json.loads(json.dumps(t["args"]))  # fresh copy per call
+            for k, kind in enumerate(arg_types):
+                if kind == "tree":
+                    args[k] = _build_tree(args[k], tree_cls)
+            try:
+                got = fn(*args)
+                ok = _normalize(got, compare) == _normalize(t["expected"], compare)
+                results.append({"pass": ok, "got": repr(got)[:200]})
+            except BaseException as e:  # noqa: BLE001
+                results.append({"pass": False, "got": None, "error": _format_error(e)["msg"].strip().splitlines()[-1]})
+    finally:
+        sys.stdout, sys.stderr, sys.stdin = saved
+    return json.dumps({"error": None, "results": results})

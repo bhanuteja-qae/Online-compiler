@@ -14,15 +14,27 @@
   <header class="topbar">
     <div class="brand">
       <span class="logo">Py<b>Viz</b></span>
-      <span class="tagline">Python compiler + visualizer · <b class="accent">15 DSA patterns</b></span>
+      <span class="tagline">Python compiler + visualizer · <b class="accent">15 DSA patterns</b> · 30 practice problems</span>
     </div>
     <span id="status" class="status loading">Loading Python…</span>
   </header>
 
   <div class="layout">
     <aside class="sidebar">
-      <h2>Patterns</h2>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="patterns" role="tab">Patterns</button>
+        <button class="tab" data-tab="problems" role="tab">Problems <span id="solved-count" class="count"></span></button>
+      </div>
       <ol id="pattern-list"></ol>
+      <div id="problem-panel" hidden>
+        <input id="problem-search" type="search" placeholder="Search problems…" aria-label="Search problems">
+        <div class="filters" id="difficulty-filter">
+          <button class="filter active" data-diff="">All</button>
+          <button class="filter" data-diff="Easy">Easy</button>
+          <button class="filter" data-diff="Medium">Medium</button>
+        </div>
+        <div id="problem-list"></div>
+      </div>
     </aside>
 
     <main class="workspace">
@@ -32,6 +44,8 @@
         <div class="toolbar">
           <button id="btn-viz" class="btn primary" title="Ctrl+Enter">▶ Visualize</button>
           <button id="btn-run" class="btn" title="Shift+Enter">Run</button>
+          <button id="btn-submit" class="btn submit" title="Run the test cases" hidden>✓ Submit</button>
+          <button id="btn-solution" class="btn ghost" hidden>Show solution</button>
           <button id="btn-reset" class="btn ghost" title="Restore the example code">Reset</button>
           <span class="hint">Ctrl+Enter visualize · Shift+Enter run</span>
         </div>
@@ -43,7 +57,7 @@
       </section>
 
       <section class="card output-card">
-        <h3>Output</h3>
+        <h3 id="output-title">Output</h3>
         <pre id="output" class="output"></pre>
       </section>
     </main>
@@ -73,6 +87,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
   <script src="patterns.js"></script>
+  <script src="problems.js"></script>
   <script src="viz.js"></script>
   <script src="app.js"></script>
 </body>
