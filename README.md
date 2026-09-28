@@ -15,7 +15,7 @@ It ships with runnable examples for 15 must-know DSA patterns:
 | 5 | Matrix Traversal | 10 | Top K Elements | 15 | Dynamic Programming |
 
 It also has **30 practice problems**, two for each pattern, taken from well-known LeetCode and
-HackerRank questions (Two Sum-style pointers, Sliding Window Maximum-style windows, Number
+HackerRank questions (Valid Palindrome, Longest Substring Without Repeating Characters, Number
 of Islands, Coin Change…). Each problem has:
 
 - a short description in our own words, with a link to the original problem
