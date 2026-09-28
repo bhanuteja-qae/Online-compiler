@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PyViz · DSA Playground</title>
+  <meta name="description" content="Online Python compiler that visualizes your code step by step: arrays, pointers, stacks, heaps, trees, graphs and DP tables.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">Py<b>Viz</b></span>
+      <span class="tagline">Python compiler + visualizer · <b class="accent">15 DSA patterns</b></span>
+    </div>
+    <span id="status" class="status loading">Loading Python…</span>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Patterns</h2>
+      <ol id="pattern-list"></ol>
+    </aside>
+
+    <main class="workspace">
+      <section class="card info" id="pattern-info"></section>
+
+      <section class="card editor-card">
+        <div class="toolbar">
+          <button id="btn-viz" class="btn primary" title="Ctrl+Enter">▶ Visualize</button>
+          <button id="btn-run" class="btn" title="Shift+Enter">Run</button>
+          <button id="btn-reset" class="btn ghost" title="Restore the example code">Reset</button>
+          <span class="hint">Ctrl+Enter visualize · Shift+Enter run</span>
+        </div>
+        <div id="editor"></div>
+        <details class="stdin">
+          <summary>stdin (for <code>input()</code>)</summary>
+          <textarea id="stdin" rows="3" spellcheck="false" placeholder="one line per input() call"></textarea>
+        </details>
+      </section>
+
+      <section class="card output-card">
+        <h3>Output</h3>
+        <pre id="output" class="output"></pre>
+      </section>
+    </main>
+
+    <section class="card viz-card">
+      <div class="viz-controls">
+        <button id="btn-first" class="btn icon" title="First step">⏮</button>
+        <button id="btn-prev" class="btn icon" title="Previous step (←)">◀</button>
+        <button id="btn-play" class="btn icon" title="Play / pause">▶</button>
+        <button id="btn-next" class="btn icon" title="Next step (→)">▶|</button>
+        <button id="btn-last" class="btn icon" title="Last step">⏭</button>
+        <input id="step-slider" type="range" min="0" max="0" value="0" aria-label="Step">
+        <span id="step-label" class="step-label">–</span>
+        <select id="speed" aria-label="Playback speed">
+          <option value="900">slow</option>
+          <option value="450" selected>normal</option>
+          <option value="150">fast</option>
+        </select>
+      </div>
+      <div id="callstack" class="callstack"></div>
+      <div id="viz" class="viz">
+        <div class="empty">Press <b>▶ Visualize</b> to step through your code.</div>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="patterns.js"></script>
+  <script src="viz.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
